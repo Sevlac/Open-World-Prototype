@@ -387,6 +387,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   xSize: 100
   zSize: 100
+  chunks: 2
   snow: {fileID: 2100000, guid: 6b4a020b230460543976740d029ad7b9, type: 2}
 --- !u!4 &531819839
 Transform:
