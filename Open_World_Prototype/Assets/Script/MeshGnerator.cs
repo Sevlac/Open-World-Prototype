@@ -74,35 +74,35 @@ public class MeshGnerator : MonoBehaviour
                 float y = Mathf.PerlinNoise(x * .3f, z * .3f) * 2f;
                 if (x == xMin && leftMesh)
                 {
-                    y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ)][i].y;
+                    y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ)][i+xSize-1].y;
                 }
                 if(z == zMax && topMesh)
                 {
-                    y = myMeshes[new Vector2(newMeshX, newMeshZ + zSize)][i].y;
+                    y = myMeshes[new Vector2(newMeshX, newMeshZ + zSize)][i-((xSize*zSize)-xSize)].y;
                 }
                 if(x == xMax && rightMesh)
                 {
-                    y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ)][i].y;
+                    y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ)][i-xSize+1].y;
                 }
                 if(z == zMin && bottomMesh)
                 {
-                    y = myMeshes[new Vector2(newMeshX, newMeshZ - zSize)][i].y;
+                    y = myMeshes[new Vector2(newMeshX, newMeshZ - zSize)][i+((xSize * zSize) - xSize)].y;
                 }
                 if(x == xMin && z == zMax && !leftMesh && !topMesh && topLeftMesh)
                 {
-                    y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ + zSize)][i].y;
+                    y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ + zSize)][i - ((xSize * zSize) - xSize) + xSize - 1].y;
                 }
                 if (x == xMax && z == zMax && !rightMesh && !topMesh && topRightMesh)
                 {
-                    y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ + zSize)][i].y;
+                    y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ + zSize)][i - ((xSize * zSize) - xSize) - xSize - 1].y;
                 }
                 if (x == xMax && z == zMin && !rightMesh && !bottomMesh && bottomRightMesh)
                 {
-                    y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ - zSize)][i].y;
+                    y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ - zSize)][i + ((xSize * zSize) - xSize) - xSize - 1].y;
                 }
                 if (x == xMin && z == zMin && !rightMesh && !bottomMesh && bottomLeftMesh)
                 {
-                    y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ - zSize)][i].y;
+                    y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ - zSize)][i + ((xSize * zSize) - xSize) + xSize - 1].y;
                 }
                 vertices[i] = new Vector3(x, y, z);
                 i++;
