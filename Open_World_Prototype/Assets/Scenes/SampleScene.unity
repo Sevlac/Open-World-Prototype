@@ -385,10 +385,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d814a6699a2c8f4cb3fac2bc7b7f3fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  scalePN: 10
+  offsetX: 100
+  offsetZ: 100
+  maxHeight: 10
   xSize: 100
   zSize: 100
   chunks: 2
-  snow: {fileID: 2100000, guid: 6b4a020b230460543976740d029ad7b9, type: 2}
+  land: {fileID: 2100000, guid: 6b4a020b230460543976740d029ad7b9, type: 2}
 --- !u!4 &531819839
 Transform:
   m_ObjectHideFlags: 0

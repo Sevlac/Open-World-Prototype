@@ -10,6 +10,11 @@ public class MeshGnerator : MonoBehaviour
     Dictionary<Vector2, Vector3[]> myMeshes = new Dictionary<Vector2, Vector3[]>(); // Ce dictionnaire contient tout les terrains Key= positon (x,z) du centre du terrain et Value = tableau des point du terrain
     int[] triangles;
 
+    public float scalePN = 1f;
+    public float offsetX = 100f;
+    public float offsetZ = 100f;
+    public float maxHeight = 10f;
+
     public int xSize; //taille du terrain sur x
     public int zSize; //taille du terrain sur z
 
@@ -24,7 +29,7 @@ public class MeshGnerator : MonoBehaviour
 
     public int chunks; // nombre de terrain maximum autour du personnage
 
-    public Material snow;
+    public Material land;
 
     private void Awake()
     {
@@ -53,6 +58,8 @@ public class MeshGnerator : MonoBehaviour
     void CreateShape()
     {
         myMeshes.Add(new Vector2(newMesh.transform.position.x, newMesh.transform.position.z), new Vector3[(xSize + 1) * (zSize + 1)]);
+        offsetX = Random.Range(0f, 99999f);
+        offsetZ = Random.Range(0f, 99999f);
 
         for (int i = 0, z = zMin; z <= zMax; z++)
         {
@@ -95,7 +102,7 @@ public class MeshGnerator : MonoBehaviour
         newMesh.AddComponent<MeshRenderer>();
         mesh = new Mesh();
         newMesh.GetComponent<MeshFilter>().mesh = mesh;
-        newMesh.GetComponent<MeshRenderer>().material = snow;
+        newMesh.GetComponent<MeshRenderer>().material = land;
         CreateShape();
         UpdateMesh();
         newMesh.AddComponent<MeshCollider>();
@@ -124,6 +131,10 @@ public class MeshGnerator : MonoBehaviour
         float newMeshX = newMesh.transform.position.x;
         float newMeshZ = newMesh.transform.position.z;
 
+        float xCoord = (float)x / (xSize+1) * scalePN + newMeshX;
+        float zCoord = (float)z / (zSize+1) * scalePN + newMeshZ;
+
+
         bool leftMesh = myMeshes.ContainsKey(new Vector2(newMeshX - xSize, newMeshZ));
         bool topMesh = myMeshes.ContainsKey(new Vector2(newMeshX, newMeshZ + zSize));
         bool rightMesh = myMeshes.ContainsKey(new Vector2(newMeshX + xSize, newMeshZ));
@@ -133,7 +144,7 @@ public class MeshGnerator : MonoBehaviour
         bool bottomRightMesh = myMeshes.ContainsKey(new Vector2(newMeshX + xSize, newMeshZ - zSize));
         bool bottomLeftMesh = myMeshes.ContainsKey(new Vector2(newMeshX - xSize, newMeshZ - zSize));
 
-        float y = Mathf.PerlinNoise(x * Random.Range(.1f, .5f), z * Random.Range(.1f, .5f)) * 2f;
+        float y = Mathf.PerlinNoise(xCoord , zCoord );
 
         if (x == xMin && leftMesh)
         {
