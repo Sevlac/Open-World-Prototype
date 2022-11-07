@@ -1,37 +1,46 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System;
 
 public class MeshGnerator : MonoBehaviour
 {
     Mesh mesh;
-    MeshCollider meshCollider;
     GameObject newMesh;
 
-    Dictionary<Vector2, Vector3[]> myMeshes = new Dictionary<Vector2, Vector3[]>();
-    Vector3[] vertices;
+    Dictionary<Vector2, Vector3[]> myMeshes = new Dictionary<Vector2, Vector3[]>(); // Ce dictionnaire contient tout les terrains Key= positon (x,z) du centre du terrain et Value = tableau des point du terrain
     int[] triangles;
 
-    public int xSize;
-    public int zSize;
+    public int xSize; //taille du terrain sur x
+    public int zSize; //taille du terrain sur z
+
+    private int xMin; //position minimum du terrain sur x
+    private int xMax; //position maximum du terrain sur x
+
+    private int zMin; //position minimum du terrain sur z
+    private int zMax; //position maximum du terrain sur z
 
     private float centerX = 0;
     private float centerZ = 0;
 
-    public int chunks;
+    public int chunks; // nombre de terrain maximum autour du personnage
 
     public Material snow;
 
     private void Awake()
     {
-        vertices = new Vector3[(xSize + 1) * (zSize + 1)];
+
+         xMin = (xSize / 2) * -1;
+         xMax = xSize / 2;
+
+         zMin = (zSize / 2) * -1;
+         zMax = zSize / 2;
+
         CreateMesh(0,0);
-        ChunkGenerator();
 
     }
     void Start()
     {
+        ChunkGenerator();
 
     }
 
@@ -43,74 +52,18 @@ public class MeshGnerator : MonoBehaviour
 
     void CreateShape()
     {
-        Debug.Log("Is In CreateShape" + newMesh.transform.position.x + "," + newMesh.transform.position.z);
-        Array.Clear(vertices, 0, vertices.Length);
-        vertices = new Vector3[(xSize + 1) * (zSize + 1)];
-
-
-        int xMin = (xSize / 2) * -1;
-        int xMax = xSize / 2;
-
-        int zMin = (zSize / 2) * -1;
-        int zMax = zSize / 2;
-
-        float newMeshX = newMesh.transform.position.x;
-        float newMeshZ = newMesh.transform.position.z;
-        bool leftMesh = myMeshes.ContainsKey(new Vector2(newMeshX - xSize, newMeshZ));
-        bool topMesh = myMeshes.ContainsKey(new Vector2(newMeshX, newMeshZ + zSize));
-        bool rightMesh = myMeshes.ContainsKey(new Vector2(newMeshX + xSize, newMeshZ));
-        bool bottomMesh = myMeshes.ContainsKey(new Vector2(newMeshX, newMeshZ - zSize));
-        bool topLeftMesh = myMeshes.ContainsKey(new Vector2(newMeshX - xSize, newMeshZ + zSize));
-        bool topRightMesh = myMeshes.ContainsKey(new Vector2(newMeshX + xSize, newMeshZ + zSize));
-        bool bottomRightMesh = myMeshes.ContainsKey(new Vector2(newMeshX + xSize, newMeshZ - zSize));
-        bool bottomLeftMesh = myMeshes.ContainsKey(new Vector2(newMeshX - xSize, newMeshZ - zSize));
-
-        Debug.Log("enter for loop vertices in CreateShape" + newMesh.transform.position.x + "," + newMesh.transform.position.z);
+        myMeshes.Add(new Vector2(newMesh.transform.position.x, newMesh.transform.position.z), new Vector3[(xSize + 1) * (zSize + 1)]);
 
         for (int i = 0, z = zMin; z <= zMax; z++)
         {
             for (int x = xMin; x <= xMax; x++)
             {
-                float y = Mathf.PerlinNoise(x * .3f, z * .3f) * 2f;
-                if (x == xMin && leftMesh)
-                {
-                    y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ)][i+xSize-1].y;
-                }
-                if(z == zMax && topMesh)
-                {
-                    y = myMeshes[new Vector2(newMeshX, newMeshZ + zSize)][i-((xSize*zSize)-xSize)].y;
-                }
-                if(x == xMax && rightMesh)
-                {
-                    y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ)][i-xSize+1].y;
-                }
-                if(z == zMin && bottomMesh)
-                {
-                    y = myMeshes[new Vector2(newMeshX, newMeshZ - zSize)][i+((xSize * zSize) - xSize)].y;
-                }
-                if(x == xMin && z == zMax && !leftMesh && !topMesh && topLeftMesh)
-                {
-                    y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ + zSize)][i - ((xSize * zSize) - xSize) + xSize - 1].y;
-                }
-                if (x == xMax && z == zMax && !rightMesh && !topMesh && topRightMesh)
-                {
-                    y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ + zSize)][i - ((xSize * zSize) - xSize) - xSize - 1].y;
-                }
-                if (x == xMax && z == zMin && !rightMesh && !bottomMesh && bottomRightMesh)
-                {
-                    y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ - zSize)][i + ((xSize * zSize) - xSize) - xSize - 1].y;
-                }
-                if (x == xMin && z == zMin && !rightMesh && !bottomMesh && bottomLeftMesh)
-                {
-                    y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ - zSize)][i + ((xSize * zSize) - xSize) + xSize - 1].y;
-                }
-                vertices[i] = new Vector3(x, y, z);
+                float y = CalculateY(x, z, i);
+                myMeshes[new Vector2(newMesh.transform.position.x, newMesh.transform.position.z)][i] = new Vector3(x, y, z);
                 i++;
             }
         }
 
-        Debug.Log("Out for loop vertices in CreateShape" + newMesh.transform.position.x + "," + newMesh.transform.position.z);
-        myMeshes.Add(new Vector2(newMesh.transform.position.x, newMesh.transform.position.z), vertices);
         triangles = new int[xSize * zSize * 6];
 
         int vert = 0;
@@ -131,12 +84,10 @@ public class MeshGnerator : MonoBehaviour
             }
             vert++;
         }
-        Debug.Log("Out for loop triangle in CreateShape" + newMesh.transform.position.x + "," + newMesh.transform.position.z);
     }
 
     void CreateMesh(float x, float z)
     {
-        Debug.Log("enter CreateMesh" + x + "," + z);
         newMesh = new GameObject("Mesh" + x + "," + z);
         newMesh.transform.position = new Vector3(x, 0, z);
         newMesh.transform.parent = transform;
@@ -145,28 +96,22 @@ public class MeshGnerator : MonoBehaviour
         mesh = new Mesh();
         newMesh.GetComponent<MeshFilter>().mesh = mesh;
         newMesh.GetComponent<MeshRenderer>().material = snow;
-        Debug.Log("Go In CreateShape" + x + "," + z);
         CreateShape();
         UpdateMesh();
-        Debug.Log("out updatemesh" + newMesh.transform.position.x + "," + newMesh.transform.position.z);
         newMesh.AddComponent<MeshCollider>();
         newMesh.GetComponent<MeshCollider>().sharedMesh = mesh;
-        Debug.Log("out CreateMesh" + newMesh.transform.position.x + "," + newMesh.transform.position.z);
 
     }
 
     void ChunkGenerator()
     {
-        Debug.Log("Enter chunkGenrator");
 
         for (float x = centerX - (xSize * chunks); x <= (xSize * chunks); x+=xSize)
         {
             for (float z = centerZ - (zSize * chunks); z <= (zSize * chunks); z+=zSize)
             {
-                Debug.Log("in loop with chunkGenrator");
                 if (x != centerX || z != centerZ)
                 {
-                    Debug.Log("Enter createMesh with chunkGenrator");
                     CreateMesh(x,z);
 
                 }
@@ -174,11 +119,60 @@ public class MeshGnerator : MonoBehaviour
         }
     }
 
+    private float CalculateY(int x, int z, int i)
+    {
+        float newMeshX = newMesh.transform.position.x;
+        float newMeshZ = newMesh.transform.position.z;
+
+        bool leftMesh = myMeshes.ContainsKey(new Vector2(newMeshX - xSize, newMeshZ));
+        bool topMesh = myMeshes.ContainsKey(new Vector2(newMeshX, newMeshZ + zSize));
+        bool rightMesh = myMeshes.ContainsKey(new Vector2(newMeshX + xSize, newMeshZ));
+        bool bottomMesh = myMeshes.ContainsKey(new Vector2(newMeshX, newMeshZ - zSize));
+        bool topLeftMesh = myMeshes.ContainsKey(new Vector2(newMeshX - xSize, newMeshZ + zSize));
+        bool topRightMesh = myMeshes.ContainsKey(new Vector2(newMeshX + xSize, newMeshZ + zSize));
+        bool bottomRightMesh = myMeshes.ContainsKey(new Vector2(newMeshX + xSize, newMeshZ - zSize));
+        bool bottomLeftMesh = myMeshes.ContainsKey(new Vector2(newMeshX - xSize, newMeshZ - zSize));
+
+        float y = Mathf.PerlinNoise(x * Random.Range(.1f, .5f), z * Random.Range(.1f, .5f)) * 2f;
+
+        if (x == xMin && leftMesh)
+        {
+            y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ)][i + xSize].y;
+        }
+        if (z == zMax && topMesh)
+        {
+            y = myMeshes[new Vector2(newMeshX, newMeshZ + zSize)][i - (xSize * (zSize + 1))].y;
+        }
+        if (x == xMax && rightMesh)
+        {
+            y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ)][i - xSize].y;
+        }
+        if (z == zMin && bottomMesh)
+        {
+            y = myMeshes[new Vector2(newMeshX, newMeshZ - zSize)][i + (xSize * (zSize + 1))].y;
+        }
+        if (x == xMin && z == zMax && !leftMesh && !topMesh && topLeftMesh)
+        {
+            y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ + zSize)][i - (xSize * (zSize + 1)) + xSize].y;
+        }
+        if (x == xMax && z == zMax && !rightMesh && !topMesh && topRightMesh)
+        {
+            y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ + zSize)][i - (xSize * (zSize + 1)) - xSize].y;
+        }
+        if (x == xMax && z == zMin && !rightMesh && !bottomMesh && bottomRightMesh)
+        {
+            y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ - zSize)][i + (xSize * (zSize + 1)) - xSize].y;
+        }
+        if (x == xMin && z == zMin && !rightMesh && !bottomMesh && bottomLeftMesh)
+        {
+            y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ - zSize)][i + (xSize * (zSize + 1)) + xSize].y;
+        }
+        return y;
+    }
     void UpdateMesh()
     {
 
-        Debug.Log("enter updatemesh" + newMesh.transform.position.x + "," + newMesh.transform.position.z);
-        mesh.vertices = vertices;
+        mesh.vertices = myMeshes[new Vector2(newMesh.transform.position.x, newMesh.transform.position.z)];
         mesh.triangles = triangles;
         mesh.RecalculateNormals();
     }
