@@ -7,13 +7,12 @@ public class MeshGnerator : MonoBehaviour
     Mesh mesh;
     GameObject newMesh;
 
+    public GameObject player;
+
     Dictionary<Vector2, Vector3[]> myMeshes = new Dictionary<Vector2, Vector3[]>(); // Ce dictionnaire contient tout les terrains Key= positon (x,z) du centre du terrain et Value = tableau des point du terrain
     int[] triangles;
 
-    public float scalePN = 1f;
-    public float offsetX = 100f;
-    public float offsetZ = 100f;
-    public float maxHeight = 10f;
+    public GameObject[] environement;
 
     public int xSize; //taille du terrain sur x
     public int zSize; //taille du terrain sur z
@@ -24,8 +23,11 @@ public class MeshGnerator : MonoBehaviour
     private int zMin; //position minimum du terrain sur z
     private int zMax; //position maximum du terrain sur z
 
-    private float centerX = 0;
-    private float centerZ = 0;
+    private float middleChunkX = 0;
+    private float middleChunkZ = 0;
+
+    public float playerPosX;
+    public float playerPosZ;
 
     public int chunks; // nombre de terrain maximum autour du personnage
 
@@ -33,40 +35,68 @@ public class MeshGnerator : MonoBehaviour
 
     private void Awake()
     {
-
+         
          xMin = (xSize / 2) * -1;
          xMax = xSize / 2;
 
          zMin = (zSize / 2) * -1;
          zMax = zSize / 2;
 
-        CreateMesh(0,0);
+        ChunkGenerator();
 
     }
     void Start()
     {
-        ChunkGenerator();
 
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        playerPosX = player.transform.position.x;
+        playerPosZ = player.transform.position.z;
+        if (playerPosX > middleChunkX+xMax)
+        {
+            middleChunkX += xSize;
+            ChunkGenerator();
+        }
+        if (playerPosX < middleChunkX - xMax)
+        {
+            middleChunkX -= xSize;
+            ChunkGenerator();
+        }
+        if (playerPosZ > middleChunkZ + zMax)
+        {
+            middleChunkZ += zSize;
+            ChunkGenerator();
+        }
+        if (playerPosZ < middleChunkZ - zMax)
+        {
+            middleChunkZ -= zSize;
+            ChunkGenerator();
+        }
+
     }
 
     void CreateShape()
     {
         myMeshes.Add(new Vector2(newMesh.transform.position.x, newMesh.transform.position.z), new Vector3[(xSize + 1) * (zSize + 1)]);
-        offsetX = Random.Range(0f, 99999f);
-        offsetZ = Random.Range(0f, 99999f);
+        GameObject environementToPlace;
 
         for (int i = 0, z = zMin; z <= zMax; z++)
         {
             for (int x = xMin; x <= xMax; x++)
             {
-                float y = CalculateY(x, z, i);
-                myMeshes[new Vector2(newMesh.transform.position.x, newMesh.transform.position.z)][i] = new Vector3(x, y, z);
+                environementToPlace = environement[Random.Range(0, environement.Length)];
+                if (x > xMin && x < xMax && z > zMin && z < zMax && (x > 1 || x < -1) && (z > 1 || z < -1 ))
+                {
+                    if (Random.Range(0, 251) == 1)
+                    {
+                        var newEnvironment = Instantiate(environementToPlace, new Vector3(x + newMesh.transform.position.x, 0, z + newMesh.transform.position.z), Quaternion.identity);
+                        newEnvironment.transform.parent = newMesh.transform;
+                    }
+                }
+                myMeshes[new Vector2(newMesh.transform.position.x, newMesh.transform.position.z)][i] = new Vector3(x, 0, z);
                 i++;
             }
         }
@@ -112,74 +142,41 @@ public class MeshGnerator : MonoBehaviour
 
     void ChunkGenerator()
     {
-
-        for (float x = centerX - (xSize * chunks); x <= (xSize * chunks); x+=xSize)
+        float xMeshMin = middleChunkX - (xSize * (chunks + 1));
+        float xMeshMax = middleChunkX + (xSize * (chunks + 1));
+        float zMeshMin = middleChunkZ - (zSize * (chunks + 1));
+        float zMeshMax = middleChunkZ + (zSize * (chunks + 1));
+        for (float x = xMeshMin; x <= xMeshMax; x += xSize)
         {
-            for (float z = centerZ - (zSize * chunks); z <= (zSize * chunks); z+=zSize)
+            for (float z = zMeshMin; z <= zMeshMax; z += zSize)
             {
-                if (x != centerX || z != centerZ)
+                if (x == xMeshMin || x == xMeshMax || z == zMeshMin || z == zMeshMax)
                 {
-                    CreateMesh(x,z);
+                    if (myMeshes.ContainsKey(new Vector2(x, z)))
+                    {
+                        gameObject.transform.Find("Mesh" + x + "," + z).gameObject.SetActive(false);
+                    }
 
+                }
+            }
+        }
+        for (float x = xMeshMin + xSize; x <= xMeshMax - xSize; x+=xSize)
+        {
+            for (float z = zMeshMin + xSize; z <= zMeshMax - xSize; z+=zSize)
+            {
+                if (myMeshes.ContainsKey(new Vector2(x, z)))
+                {
+                    gameObject.transform.Find("Mesh" + x + "," + z).gameObject.SetActive(true);
+                }
+                else
+                {
+                    CreateMesh(x, z);
                 }
             }
         }
     }
 
-    private float CalculateY(int x, int z, int i)
-    {
-        float newMeshX = newMesh.transform.position.x;
-        float newMeshZ = newMesh.transform.position.z;
-
-        float xCoord = (float)x / (xSize+1) * scalePN + newMeshX;
-        float zCoord = (float)z / (zSize+1) * scalePN + newMeshZ;
-
-
-        bool leftMesh = myMeshes.ContainsKey(new Vector2(newMeshX - xSize, newMeshZ));
-        bool topMesh = myMeshes.ContainsKey(new Vector2(newMeshX, newMeshZ + zSize));
-        bool rightMesh = myMeshes.ContainsKey(new Vector2(newMeshX + xSize, newMeshZ));
-        bool bottomMesh = myMeshes.ContainsKey(new Vector2(newMeshX, newMeshZ - zSize));
-        bool topLeftMesh = myMeshes.ContainsKey(new Vector2(newMeshX - xSize, newMeshZ + zSize));
-        bool topRightMesh = myMeshes.ContainsKey(new Vector2(newMeshX + xSize, newMeshZ + zSize));
-        bool bottomRightMesh = myMeshes.ContainsKey(new Vector2(newMeshX + xSize, newMeshZ - zSize));
-        bool bottomLeftMesh = myMeshes.ContainsKey(new Vector2(newMeshX - xSize, newMeshZ - zSize));
-
-        float y = Mathf.PerlinNoise(xCoord , zCoord );
-
-        if (x == xMin && leftMesh)
-        {
-            y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ)][i + xSize].y;
-        }
-        if (z == zMax && topMesh)
-        {
-            y = myMeshes[new Vector2(newMeshX, newMeshZ + zSize)][i - (xSize * (zSize + 1))].y;
-        }
-        if (x == xMax && rightMesh)
-        {
-            y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ)][i - xSize].y;
-        }
-        if (z == zMin && bottomMesh)
-        {
-            y = myMeshes[new Vector2(newMeshX, newMeshZ - zSize)][i + (xSize * (zSize + 1))].y;
-        }
-        if (x == xMin && z == zMax && !leftMesh && !topMesh && topLeftMesh)
-        {
-            y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ + zSize)][i - (xSize * (zSize + 1)) + xSize].y;
-        }
-        if (x == xMax && z == zMax && !rightMesh && !topMesh && topRightMesh)
-        {
-            y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ + zSize)][i - (xSize * (zSize + 1)) - xSize].y;
-        }
-        if (x == xMax && z == zMin && !rightMesh && !bottomMesh && bottomRightMesh)
-        {
-            y = myMeshes[new Vector2(newMeshX + xSize, newMeshZ - zSize)][i + (xSize * (zSize + 1)) - xSize].y;
-        }
-        if (x == xMin && z == zMin && !rightMesh && !bottomMesh && bottomLeftMesh)
-        {
-            y = myMeshes[new Vector2(newMeshX - xSize, newMeshZ - zSize)][i + (xSize * (zSize + 1)) + xSize].y;
-        }
-        return y;
-    }
+    
     void UpdateMesh()
     {
 
